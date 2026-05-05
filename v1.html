@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>KAKI & CATCH</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #fff7ed;
+    font-family: sans-serif;
+    text-align: center;
+  }
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div id="score">スコア: 0</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let basket = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  width: 100,
+  height: 20
+};
+
+let kaki = [];
+let score = 0;
+
+// 柿を追加
+function spawnKaki() {
+  kaki.push({
+    x: Math.random() * canvas.width,
+    y: -20,
+    radius: 15,
+    speed: 2 + Math.random() * 2
+  });
+}
+
+// 操作（マウス・タッチ）
+canvas.addEventListener("mousemove", e => {
+  basket.x = e.clientX;
+});
+canvas.addEventListener("touchmove", e => {
+  basket.x = e.touches[0].clientX;
+});
+
+// 描画
+function drawBasket() {
+  ctx.fillStyle = "#444";
+  ctx.fillRect(
+    basket.x - basket.width / 2,
+    basket.y,
+    basket.width,
+    basket.height
+  );
+}
+
+function drawKaki(k) {
+  // 実（オレンジ）
+  ctx.fillStyle = "#f97316";
+  ctx.beginPath();
+  ctx.arc(k.x, k.y, k.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ヘタ（緑）
+  ctx.fillStyle = "#16a34a";
+  ctx.fillRect(k.x - 5, k.y - k.radius - 5, 10, 5);
+}
+
+// 更新
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawBasket();
+
+  for (let i = 0; i < kaki.length; i++) {
+    let k = kaki[i];
+    k.y += k.speed;
+
+    drawKaki(k);
+
+    // キャッチ判定
+    if (
+      k.y + k.radius > basket.y &&
+      k.x > basket.x - basket.width / 2 &&
+      k.x < basket.x + basket.width / 2
+    ) {
+      score++;
+      document.getElementById("score").textContent = "スコア: " + score;
+      kaki.splice(i, 1);
+      i--;
+    }
+
+    // 落ちたら消える
+    if (k.y > canvas.height) {
+      kaki.splice(i, 1);
+      i--;
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
+// 定期的に柿を降らせる
+setInterval(spawnKaki, 800);
+
+update();
+</script>
+
+</body>
+</html>
