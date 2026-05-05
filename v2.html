@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>KAKI & CATCH 2.0</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #fff7ed;
+    font-family: sans-serif;
+    text-align: center;
+  }
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<div id="score">スコア: 0</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let basket = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  width: 100,
+  height: 20
+};
+
+let kaki = [];
+let score = 0;
+let gameOver = false;
+
+// 柿を追加（20%で緑）
+function spawnKaki() {
+  const isGreen = Math.random() < 0.2;
+
+  kaki.push({
+    x: Math.random() * canvas.width,
+    y: -20,
+    radius: 15,
+    speed: 2 + Math.random() * 2,
+    type: isGreen ? "green" : "orange"
+  });
+}
+
+// 操作
+canvas.addEventListener("mousemove", e => {
+  basket.x = e.clientX;
+});
+canvas.addEventListener("touchmove", e => {
+  basket.x = e.touches[0].clientX;
+});
+
+// リスタート
+function resetGame() {
+  kaki = [];
+  score = 0;
+  gameOver = false;
+  document.getElementById("score").textContent = "スコア: 0";
+  update();
+}
+
+// タップ・クリックで再開
+canvas.addEventListener("click", () => {
+  if (gameOver) {
+    resetGame();
+  }
+});
+canvas.addEventListener("touchstart", () => {
+  if (gameOver) {
+    resetGame();
+  }
+});
+
+// カゴ
+function drawBasket() {
+  ctx.fillStyle = "#444";
+  ctx.fillRect(
+    basket.x - basket.width / 2,
+    basket.y,
+    basket.width,
+    basket.height
+  );
+}
+
+// 柿
+function drawKaki(k) {
+  if (k.type === "green") {
+    ctx.fillStyle = "#4d7c0f";
+  } else {
+    ctx.fillStyle = "#f97316";
+  }
+
+  ctx.beginPath();
+  ctx.arc(k.x, k.y, k.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ヘタ
+  ctx.fillStyle = "#166534";
+  ctx.fillRect(k.x - 5, k.y - k.radius - 5, 10, 5);
+}
+
+// ゲームオーバー表示
+function drawGameOver() {
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "40px sans-serif";
+  ctx.fillText("GAME OVER", canvas.width / 2 - 120, canvas.height / 2);
+
+  ctx.font = "24px sans-serif";
+  ctx.fillText("Score: " + score, canvas.width / 2 - 60, canvas.height / 2 + 40);
+
+  ctx.font = "18px sans-serif";
+  ctx.fillText("Tap to Restart", canvas.width / 2 - 80, canvas.height / 2 + 80);
+}
+
+// 更新
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawBasket();
+
+  for (let i = 0; i < kaki.length; i++) {
+    let k = kaki[i];
+    k.y += k.speed;
+
+    drawKaki(k);
+
+    // キャッチ判定
+    if (
+      k.y + k.radius > basket.y &&
+      k.x > basket.x - basket.width / 2 &&
+      k.x < basket.x + basket.width / 2
+    ) {
+      if (k.type === "green") {
+        gameOver = true;
+      } else {
+        score++;
+        document.getElementById("score").textContent = "スコア: " + score;
+      }
+
+      kaki.splice(i, 1);
+      i--;
+      continue;
+    }
+
+    // 落下で削除
+    if (k.y > canvas.height) {
+      kaki.splice(i, 1);
+      i--;
+    }
+  }
+
+  if (!gameOver) {
+    requestAnimationFrame(update);
+  } else {
+    drawGameOver();
+  }
+}
+
+// 柿生成
+setInterval(() => {
+  if (!gameOver) spawnKaki();
+}, 800);
+
+update();
+</script>
+
+</body>
+</html>
