@@ -204,6 +204,27 @@ function drawTree() {
     );
     ctx.fill();
   });
+
+  // 背景の柿
+  ctx.fillStyle = "#ea580c";
+
+  const treeKaki = [
+    [0.70, 0.44],
+    [0.83, 0.42],
+    [0.88, 0.38]
+  ];
+
+  treeKaki.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(
+      canvas.width * x,
+      canvas.height * y,
+      6,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });  
 }
 
 // ======================
