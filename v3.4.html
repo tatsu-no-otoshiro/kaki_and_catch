@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>KAKI & CATCH 3.3</title>
+
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #fff7ed;
+    font-family: sans-serif;
+    text-align: center;
+  }
+
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+  }
+
+  #highscore {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    font-size: 18px;
+    color: #666;
+  }
+
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="score">SCORE: 0</div>
+<div id="highscore">HIGH SCORE: 0</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// カゴ
+let basket = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  width: 100,
+  height: 20
+};
+
+// ゲーム状態
+let kaki = [];
+let score = 0;
+let gameOver = false;
+
+// +10 表示エフェクト
+let effects = [];
+
+// ハイスコア
+let highScore = localStorage.getItem("highScore") || 0;
+
+// NEW RECORD 判定
+let newRecord = false;
+
+// 柿生成タイマー
+let spawnTimer = 0;
+
+// ハイスコア表示
+document.getElementById("highscore").textContent =
+  "HIGH SCORE: " + highScore;
+
+// ======================
+// 柿生成
+// ======================
+function spawnKaki() {
+
+  // スコアに応じて緑柿率アップ（最大50%）
+  const greenRate = Math.min(0.2 + score * 0.005, 0.5);
+  
+  const isGreen = Math.random() < greenRate;
+
+  // 黄金柿（5%）
+  const isGolden = !isGreen && Math.random() < 0.05;
+
+  kaki.push({
+    x: Math.random() * canvas.width,
+    y: -20,
+    radius: isGolden ? 20 : 15,
+
+    // スコアで速度アップ
+    speed: 2 + Math.random() * 2 + score * 0.03,
+
+    type: isGreen
+      ? "green"
+      : isGolden
+        ? "gold"
+        : "orange"
+  });
+}
+
+// ======================
+// 操作
+// ======================
+canvas.addEventListener("mousemove", e => {
+  basket.x = e.clientX;
+});
+
+canvas.addEventListener("touchmove", e => {
+  basket.x = e.touches[0].clientX;
+});
+
+// ======================
+// リスタート
+// ======================
+function resetGame() {
+  kaki = [];
+　effects = [];
+  score = 0;
+  gameOver = false;
+  newRecord = false;
+  spawnTimer = 0;
+
+  document.getElementById("score").textContent = "SCORE: 0";
+
+  update();
+}
+
+// ======================
+// タップ・クリックで再開
+// ======================
+canvas.addEventListener("click", () => {
+  if (gameOver) {
+    resetGame();
+  }
+});
+
+canvas.addEventListener("touchstart", () => {
+  if (gameOver) {
+    resetGame();
+  }
+});
+
+// ======================
+// 背景描画
+// ======================
+function drawTree() {
+
+  ctx.strokeStyle = "#d6d3d1";
+  ctx.lineWidth = 12;
+
+  // 幹
+  ctx.beginPath();
+  ctx.moveTo(canvas.width * 0.8, canvas.height);
+  ctx.lineTo(canvas.width * 0.8, canvas.height * 0.5);
+  ctx.stroke();
+
+  // 左枝
+  ctx.beginPath();
+  ctx.moveTo(canvas.width * 0.8, canvas.height * 0.65);
+  ctx.lineTo(canvas.width * 0.65, canvas.height * 0.45);
+  ctx.stroke();
+
+  // 右枝
+  ctx.beginPath();
+  ctx.moveTo(canvas.width * 0.8, canvas.height * 0.6);
+  ctx.lineTo(canvas.width * 0.92, canvas.height * 0.4);
+  ctx.stroke();
+
+  // 葉
+  ctx.fillStyle = "#d9e7d0";
+
+  const leaves = [
+    [0.65, 0.45],
+    [0.68, 0.42],
+    [0.72, 0.40],
+    [0.75, 0.44],
+    [0.78, 0.41],
+    [0.80, 0.48],
+    [0.83, 0.45],
+    [0.86, 0.41],
+    [0.88, 0.43],
+    [0.92, 0.40],
+    [0.85, 0.36],
+    [0.76, 0.37]
+  ];
+
+  leaves.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.ellipse(
+      canvas.width * x,
+      canvas.height * y,
+      12, // 横半径
+      8,  // 縦半径
+      0,  // 回転
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
+
+  // 背景の柿
+  ctx.fillStyle = "#ea580c";
+
+  const treeKaki = [
+    [0.70, 0.44],
+    [0.83, 0.42],
+    [0.88, 0.38]
+  ];
+
+  treeKaki.forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.arc(
+      canvas.width * x,
+      canvas.height * y,
+      6,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
+
+  // 猿シルエット
+  ctx.fillStyle = "#a8a29e";
+
+  // 左耳
+  ctx.beginPath();
+  ctx.arc(
+    canvas.width * 0.753,
+    canvas.height * 0.54,
+    3,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  // 右耳
+  ctx.beginPath();
+  ctx.arc(
+    canvas.width * 0.767,
+    canvas.height * 0.54,
+    3,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  // 頭
+  ctx.beginPath();
+  ctx.arc(
+    canvas.width * 0.76,
+    canvas.height * 0.54,
+    8,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  // 胴体
+  ctx.beginPath();
+  ctx.ellipse(
+    canvas.width * 0.76,
+    canvas.height * 0.57,
+    11,
+    13,
+    0,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  // しっぽ
+  ctx.strokeStyle = "#a8a29e";
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(
+    canvas.width * 0.77,
+    canvas.height * 0.58
+  );
+  ctx.quadraticCurveTo(
+    canvas.width * 0.785,
+    canvas.height * 0.575,
+    canvas.width * 0.78,
+    canvas.height * 0.565
+  );
+  ctx.stroke();
+}
+
+// ======================
+// カゴ描画
+// ======================
+function drawBasket() {
+  ctx.fillStyle = "#444";
+
+  ctx.fillRect(
+    basket.x - basket.width / 2,
+    basket.y,
+    basket.width,
+    basket.height
+  );
+}
+
+// ======================
+// 柿描画
+// ======================
+function drawKaki(k) {
+
+  // 柿本体
+  if (k.type === "green") {
+
+    ctx.fillStyle = "#4d7c0f";
+
+  } else if (k.type === "gold") {
+
+    ctx.fillStyle = "#c2410c";
+
+  } else {
+
+    ctx.fillStyle = "#f97316";
+  }
+
+  ctx.beginPath();
+  ctx.arc(k.x, k.y, k.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 黄金柿ハイライト
+  if (k.type === "gold") {
+
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+
+    ctx.beginPath();
+
+    ctx.arc(
+      k.x - 5,
+      k.y - 5,
+      4,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+  }
+
+  // ヘタ
+  ctx.fillStyle = "#166534";
+  ctx.fillRect(
+    k.x - 5,
+    k.y - k.radius - 5,
+    10,
+    5
+  );
+}
+
+// ======================
+// GAME OVER表示
+// ======================
+function drawGameOver() {
+
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#fff";
+
+  ctx.font = "40px sans-serif";
+  ctx.fillText(
+    "GAME OVER",
+    canvas.width / 2 - 120,
+    canvas.height / 2
+  );
+
+  ctx.font = "24px sans-serif";
+  ctx.fillText(
+    "SCORE: " + score,
+    canvas.width / 2 - 60,
+    canvas.height / 2 + 40
+  );
+
+  if (newRecord) {
+
+    ctx.fillStyle = "#fde047";
+
+    ctx.font = "32px sans-serif";
+
+    ctx.fillText(
+      "NEW RECORD!",
+      canvas.width / 2 - 130,
+      canvas.height / 2 + 90
+    );
+  }
+
+  ctx.fillStyle = "#fff";
+
+  ctx.font = "18px sans-serif";
+  ctx.fillText(
+    "TAP TO RESTART",
+    canvas.width / 2 - 80,
+    canvas.height / 2 + 140
+  );
+}
+
+// ======================
+// 更新
+// ======================
+function update() {
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 背景描画
+  drawTree();
+
+  // カゴ描画
+  drawBasket();
+
+  // エフェクト描画
+  for (let i = 0; i < effects.length; i++) {
+
+    let e = effects[i];
+
+    ctx.fillStyle = "#c2410c";
+
+    ctx.font = "32px sans-serif";
+
+    ctx.fillText(e.text, e.x, e.y);
+
+    // 少し上に移動
+    e.y -= 1;
+
+    // 寿命減少
+    e.life--;
+
+    // 消去
+    if (e.life <= 0) {
+      effects.splice(i, 1);
+      i--;
+    }
+  }
+
+  // ======================
+  // 柿生成タイマー
+  // スコアが増えるほど出現間隔短縮
+  // 最短300ms相当
+  // ======================
+  spawnTimer++;
+
+  const interval = Math.max(800 - score * 10, 300);
+
+  if (spawnTimer > interval / 16) {
+    spawnKaki();
+    spawnTimer = 0;
+  }
+
+  // ======================
+  // 柿更新
+  // ======================
+  for (let i = 0; i < kaki.length; i++) {
+
+    let k = kaki[i];
+
+    // 落下
+    k.y += k.speed;
+
+    // 描画
+    drawKaki(k);
+
+    // ======================
+    // キャッチ判定
+    // ======================
+    if (
+      k.y + k.radius > basket.y &&
+      k.x > basket.x - basket.width / 2 &&
+      k.x < basket.x + basket.width / 2
+    ) {
+
+      // 緑柿なら終了
+      if (k.type === "green") {
+
+        gameOver = true;
+
+      } else {
+
+        // 通常柿なら得点
+        if (k.type === "gold") {
+
+          score += 10;
+
+          // +10 エフェクト追加
+          effects.push({
+            x: k.x,
+            y: k.y,
+            text: "+10",
+            life: 60
+          });
+
+        } else {
+
+          score++;
+        }
+
+        document.getElementById("score").textContent =
+          "SCORE: " + score;
+
+        // ハイスコア更新
+        if (score > highScore) {
+
+          highScore = score;
+
+          newRecord = true;
+        
+          localStorage.setItem("highScore", highScore);
+        
+          document.getElementById("highscore").textContent =
+            "HIGH SCORE: " + highScore;
+        }
+      }
+
+      // 消去
+      kaki.splice(i, 1);
+      i--;
+
+      continue;
+    }
+
+    // ======================
+    // 画面外削除
+    // ======================
+    if (k.y > canvas.height) {
+      kaki.splice(i, 1);
+      i--;
+    }
+  }
+
+  // ======================
+  // 次フレーム
+  // ======================
+  if (!gameOver) {
+
+    requestAnimationFrame(update);
+
+  } else {
+
+    drawGameOver();
+  }
+}
+
+// 開始
+update();
+
+</script>
+
+</body>
+</html>
+
