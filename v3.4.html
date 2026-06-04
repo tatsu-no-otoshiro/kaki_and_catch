@@ -226,14 +226,18 @@ function drawTree() {
     ctx.fill();
   });
 
+  // 猿の基準位置
+  const monkeyX = canvas.width * 0.76;
+  const monkeyY = canvas.height * 0.56;
+
   // 猿シルエット
   ctx.fillStyle = "#a8a29e";
 
   // 左耳
   ctx.beginPath();
   ctx.arc(
-    canvas.width * 0.753,
-    canvas.height * 0.54,
+    monkeyX - 7,
+    monkeyY - 16,
     3,
     0,
     Math.PI * 2
@@ -243,8 +247,8 @@ function drawTree() {
   // 右耳
   ctx.beginPath();
   ctx.arc(
-    canvas.width * 0.767,
-    canvas.height * 0.54,
+    monkeyX + 7,
+    monkeyY - 16,
     3,
     0,
     Math.PI * 2
@@ -254,8 +258,8 @@ function drawTree() {
   // 頭
   ctx.beginPath();
   ctx.arc(
-    canvas.width * 0.76,
-    canvas.height * 0.54,
+    monkeyX,
+    monkeyY - 16,
     8,
     0,
     Math.PI * 2
@@ -265,8 +269,8 @@ function drawTree() {
   // 胴体
   ctx.beginPath();
   ctx.ellipse(
-    canvas.width * 0.76,
-    canvas.height * 0.57,
+    monkeyX,
+    monkeyY + 10,
     11,
     13,
     0,
@@ -281,15 +285,17 @@ function drawTree() {
 
   ctx.beginPath();
   ctx.moveTo(
-    canvas.width * 0.77,
-    canvas.height * 0.58
+    monkeyX + 10,
+    monkeyY + 13
   );
+
   ctx.quadraticCurveTo(
-    canvas.width * 0.785,
-    canvas.height * 0.575,
-    canvas.width * 0.78,
-    canvas.height * 0.565
+    monkeyX + 24,
+    monkeyY + 10,
+    monkeyX + 20,
+    monkeyY
   );
+
   ctx.stroke();
 }
 
