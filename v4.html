@@ -152,6 +152,10 @@ canvas.addEventListener("touchstart", () => {
 // ======================
 function drawTree() {
 
+  // 木専用設定
+  ctx.lineCap = "butt";
+  ctx.lineJoin = "miter";
+  
   ctx.strokeStyle = "#d6d3d1";
   ctx.lineWidth = 12;
 
